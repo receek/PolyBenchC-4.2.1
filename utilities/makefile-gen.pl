@@ -62,14 +62,14 @@ include $configFile
 EXTRA_FLAGS=$extra_flags{$kernel}
 DATASET_SIZE_FLAG = -D\$(DATASET_SIZE)_DATASIZE
 
-OUT_NAME ?= $kernel\_\$(shell echo \$(DATASET_SIZE) | tr '[:upper:]' '[:lower:]')
+OUT_NAME ?= $kernel\_\$(shell echo \$(DATASET_SIZE) | tr '[:upper:]' '[:lower:]')\$(EXT)
 
 \$(OUT_NAME): $kernel.c $kernel.h
 	\${VERBOSE} \${CC} -o \${OUT_NAME} \\
       $kernel.c \\
       \${CFLAGS} \\
       -I. -I$utilityDir $utilityDir/polybench.c \\
-      \${DATASET_SIZE_FLAG} \${EXTRA_FLAGS}
+      \${DATASET_SIZE_FLAG} \${EXTRA_FLAGS} \${CUSTOM_FLAGS}
 
 clean:
 	@ rm -f $kernel $kernel\_*
@@ -87,10 +87,10 @@ if ($GEN_CONFIG) {
 open FILE, '>'.$TARGET_DIR.'/config.mk';
 
 print FILE << "EOF";
-DATASET_SIZE ?= MEDIUM
+DATASET_SIZE?=MEDIUM
 
-CC = clang
-CFLAGS = -O2 -DPOLYBENCH_USE_C99_PROTO -DPOLYBENCH_TIME
+CC=clang
+CFLAGS=-O2 -DPOLYBENCH_USE_C99_PROTO -DPOLYBENCH_TIME
 EOF
 
 close FILE;
