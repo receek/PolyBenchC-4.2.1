@@ -33,10 +33,16 @@ WASI_TARGETDIRS := $(foreach dir,$(SUBDIRS),$(shell echo $(WASI_TARGET_PREFIX)/$
 WASI_TARGETFILES := $(foreach file,$(WASI_EXECS),$(shell echo $(WASI_TARGET_PREFIX)/$(file)))
 WASI_CC := "${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 
+WASI_WASMER_AOT_CRANELIFT_TARGETFILES := $(foreach file,$(WASI_EXECS),$(shell echo $(WASI_TARGET_PREFIX)/$(file).wasmer.cranelift.aot))
+WASI_WASMER_AOT_SINGLEPASS_TARGETFILES := $(foreach file,$(WASI_EXECS),$(shell echo $(WASI_TARGET_PREFIX)/$(file).wasmer.singlepass.aot))
+WASI_WASMER_AOT_LLVM_TARGETFILES := $(foreach file,$(WASI_EXECS),$(shell echo $(WASI_TARGET_PREFIX)/$(file).wasmer.llvm.aot))
+
+WASI_WASMTIME_AOT_CRANELIFT_TARGETFILES := $(foreach file,$(WASI_EXECS),$(shell echo $(WASI_TARGET_PREFIX)/$(file).wasmtime.cranelift.aot))
 
 WASIX_BENCHMARKS := $(foreach f,$(BENCHMARKS), \
 	$(shell echo $(f).wasix) \
 )
+
 WASIX_EXECS := $(foreach file,$(NATIVE_EXECS),$(shell echo $(file).wasix))
 WASIX_TARGET_PREFIX = target/wasix
 WASIX_TARGETDIRS := $(foreach dir,$(SUBDIRS),$(shell echo $(WASIX_TARGET_PREFIX)/$(dir)))
@@ -89,6 +95,10 @@ WASIX_CLFLAGS = -Wl,--shared-memory \
 
 WASIX_CC := "${WASI_SDK_PATH}/bin/clang $(WASIX_CFLAGS) $(WASIX_CLFLAGS)"
 
+WASIX_WASMER_AOT_CRANELIFT_TARGETFILES := $(foreach file,$(WASIX_EXECS),$(shell echo $(WASIX_TARGET_PREFIX)/$(file).wasmer.cranelift.aot))
+WASIX_WASMER_AOT_SINGLEPASS_TARGETFILES := $(foreach file,$(WASIX_EXECS),$(shell echo $(WASIX_TARGET_PREFIX)/$(file).wasmer.singlepass.aot))
+WASIX_WASMER_AOT_LLVM_TARGETFILES := $(foreach file,$(WASIX_EXECS),$(shell echo $(WASIX_TARGET_PREFIX)/$(file).wasmer.llvm.aot))
+
 ### build native
 .PHONY: $(NATIVE_BENCHMARKS)
 $(NATIVE_BENCHMARKS):
@@ -100,7 +110,7 @@ $(NATIVE_TARGETDIRS):
 	mkdir -p $@
 
 $(NATIVE_EXECS): $(NATIVE_BENCHMARKS) $(NATIVE_TARGETDIRS)
-	mv $@ target/native/$@
+	cp $@ target/native/$@
 
 $(NATIVE_TARGETFILES): $(NATIVE_EXECS)
 
@@ -128,12 +138,31 @@ $(WASI_TARGETDIRS):
 	mkdir -p $@
 
 $(WASI_EXECS): $(WASI_BENCHMARKS) $(WASI_TARGETDIRS)
-	mv $@ target/wasi/$@
+	cp $@ target/wasi/$@
 
 $(WASI_TARGETFILES): $(WASI_EXECS)
 
-.PHONY: wasi
-wasi: $(WASI_TARGETFILES)
+wasi: $(WASI_EXECS)
+
+$(WASI_WASMER_AOT_CRANELIFT_TARGETFILES): $(WASI_TARGETFILES)
+	wasmer compile --cranelift $(@:%.wasmer.cranelift.aot=%) -o $@
+
+wasi-wasmer-cranelift: $(WASI_WASMER_AOT_CRANELIFT_TARGETFILES)
+
+# $(WASI_WASMER_AOT_SINGLEPASS_TARGETFILES): $(WASI_TARGETFILES)
+# 	wasmer compile --singlepass $(@:%.wasmer.singlepass.aot=%) -o $@
+
+# wasi-wasmer-singlepass: $(WASI_WASMER_AOT_SINGLEPASS_TARGETFILES)
+
+$(WASI_WASMER_AOT_LLVM_TARGETFILES): $(WASI_TARGETFILES)
+	wasmer compile --llvm $(@:%.wasmer.llvm.aot=%) -o $@
+
+wasi-wasmer-llvm: $(WASI_WASMER_AOT_LLVM_TARGETFILES)
+
+$(WASI_WASMTIME_AOT_CRANELIFT_TARGETFILES): $(WASI_TARGETFILES)
+	wasmtime compile $(@:%.wasmtime.cranelift.aot=%) -o $@
+
+wasi-wasmtime-cranelift: $(WASI_WASMTIME_AOT_CRANELIFT_TARGETFILES)
 
 ### build wasix
 .PHONY: WASIX_SDK 
@@ -159,12 +188,26 @@ $(WASIX_TARGETDIRS):
 	mkdir -p $@
 
 $(WASIX_EXECS): $(WASIX_BENCHMARKS) $(WASIX_TARGETDIRS)
-	mv $@ target/wasix/$@
+	cp $@ target/wasix/$@
 
 $(WASIX_TARGETFILES): $(WASIX_EXECS)
 
-.PHONY: wasix
 wasix: $(WASIX_TARGETFILES)
+
+$(WASIX_WASMER_AOT_CRANELIFT_TARGETFILES): $(WASIX_TARGETFILES)
+	wasmer compile --cranelift $(@:%.wasmer.cranelift.aot=%) -o $@
+
+wasix-wasmer-cranelift: $(WASIX_WASMER_AOT_CRANELIFT_TARGETFILES)
+
+# $(WASIX_WASMER_AOT_SINGLEPASS_TARGETFILES): $(WASIX_TARGETFILES)
+# 	wasmer compile --singlepass $(@:%.wasmer.singlepass.aot=%) -o $@
+
+# wasix-wasmer-singlepass: $(WASIX_WASMER_AOT_SINGLEPASS_TARGETFILES)
+
+$(WASIX_WASMER_AOT_LLVM_TARGETFILES): $(WASIX_TARGETFILES)
+	wasmer compile --llvm $(@:%.wasmer.llvm.aot=%) -o $@
+
+wasix-wasmer-llvm: $(WASIX_WASMER_AOT_LLVM_TARGETFILES)
 
 ### cleaning
 .PHONY: clean
