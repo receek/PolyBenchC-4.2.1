@@ -399,7 +399,7 @@ void polybench_timer_print()
 		 (double)(polybench_t_end - polybench_t_start)) / 1000000000);
 #else
 # ifndef POLYBENCH_CYCLE_ACCURATE_TIMER
-      printf ("%0.6f\n", polybench_t_end - polybench_t_start);
+      printf ("%0.10f\n", polybench_t_end - polybench_t_start);
 # else
       printf ("%Ld\n", polybench_c_end - polybench_c_start);
 # endif

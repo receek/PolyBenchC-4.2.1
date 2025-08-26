@@ -60,7 +60,7 @@ print FILE << "EOF";
 include $configFile
 
 EXTRA_FLAGS=$extra_flags{$kernel}
-DATASET_SIZE_FLAG = -D\$(DATASET_SIZE)_DATASIZE
+DATASET_SIZE_FLAG = -D\$(DATASET_SIZE)_DATASET
 
 OUT_NAME ?= $kernel\_\$(shell echo \$(DATASET_SIZE) | tr '[:upper:]' '[:lower:]')\$(EXT)
 
