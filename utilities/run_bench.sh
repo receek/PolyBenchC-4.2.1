@@ -3,12 +3,17 @@
 set -eux
 
 TEST_DIR=$1
-EXECUTOR=${2:-""}
-RESULT_SUFFIX=${3:-""}
-# =${4:-""}
+RUNTIME=${2:-""}
+BACKEND=${3:-""}
+AOT=${4:-""}
 
-if [ $EXECUTOR ] && [ ! $RESULT_SUFFIX ]; then
-    echo "help: $0 <test_dir> [ <runtime> <result file suffix> ]"
+if [ ! $TEST_DIR ]; then
+    echo "help: $0 <test_dir> [ <runtime> <result file suffix> [<aot flag>]]"
+    exit 1
+fi
+
+if [ $RUNTIME ] && [ ! $BACKEND ]; then
+    echo "help: $0 <test_dir> [ <runtime> <result file suffix> [<aot flag>]]"
     exit 1
 fi
 
@@ -46,14 +51,45 @@ benchmarks=( \
 )
 
 datasets=("mini" "small" "medium" "large" "extralarge")
-arch="$(basename $TEST_DIR)"
+target="$(basename $TEST_DIR)"
 
+if [ "$RUNTIME" == "wasmtime" ] && [ "$target" == "wasix" ]; then
+    echo "wasmtime doesn't support wasix"
+    exit 1
+fi
 
 run() {
     cmd=$1
     for i in {0..5}; do
         eval "$cmd"
     done 
+}
+
+get_cmd() {
+    local bin_file="$1"
+
+    if [ "$RUNTIME" == "wasmer" ]; then
+        if [ "$AOT" ]; then
+            result_file="$bin_file.wasmer.$BACKEND.aot.result"
+            cmd="wasmer run $bin_file.wasmer.$BACKEND.aot >> $result_file"
+        else
+            result_file="$bin_file.wasmer.$BACKEND.jit.result"
+            cmd="wasmer run --$BACKEND $bin_file >> $result_file"
+        fi
+    elif [ "$RUNTIME" == "wasmtime" ]; then
+        if [ "$AOT" ]; then
+            result_file="$bin_file.wasmtime.$BACKEND.aot.result"
+            cmd="wasmtime run $bin_file.wasmtime.$BACKEND.aot >> $result_file"
+        else
+            result_file="$bin_file.wasmtime.$BACKEND.jit.result"
+            cmd="wasmtime run $bin_file >> $result_file"
+        fi
+    else
+        echo "Specify runtime: wasmer or wasmtime"
+        exit 1
+    fi
+
+    return 0
 }
 
 for bench in "${benchmarks[@]}"; do
@@ -63,14 +99,15 @@ for bench in "${benchmarks[@]}"; do
 
     for variant in "${datasets[@]}"; do
 
-        if [ "$EXECUTOR" ]; then
+        if [ "$RUNTIME" ]; then
             # wasip1 and wasix runs with jit and aot approaches
-            result_file="${benchmark_name}_$variant.$arch-$RESULT_SUFFIX"
+            bin_file="${benchmark_name}_$variant.$target"
+            get_cmd "$bin_file"
             rm -f "$bench_dir/$result_file"
 
             (
                 cd $bench_dir;
-                run "$EXECUTOR ${benchmark_name}_$variant.$arch >> $result_file"
+                run "$cmd";
             )
 
         else
@@ -80,10 +117,12 @@ for bench in "${benchmarks[@]}"; do
 
             (
                 cd $bench_dir;
-                run "./${benchmark_name}_$variant >> $result_file"
+                run "./${benchmark_name}_$variant >> $result_file";
             )
 
         fi
     done
+
+    exit 0
 
 done
