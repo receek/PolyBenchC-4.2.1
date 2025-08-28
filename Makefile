@@ -209,6 +209,9 @@ $(WASIX_WASMER_AOT_LLVM_TARGETFILES): $(WASIX_TARGETFILES)
 
 wasix-wasmer-llvm: $(WASIX_WASMER_AOT_LLVM_TARGETFILES)
 
+.PHONY: all
+all: native wasi wasix wasi-wasmer-cranelift wasi-wasmer-llvm wasi-wasmtime-cranelift wasix-wasmer-cranelift wasix-wasmer-llvm
+
 ### cleaning
 .PHONY: clean
 clean:
