@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eux
+set -eu
 
 TEST_DIR=$1
 RUNTIME=${2:-""}
@@ -40,7 +40,7 @@ benchmarks=( \
 "linear-algebra/solvers/ludcmp" \
 "linear-algebra/solvers/trisolv" \
 "medley/deriche" \
-"medley/floyd-warshall/floyd" \
+"medley/floyd-warshall" \
 "medley/nussinov" \
 "stencils/adi" \
 "stencils/fdtd-2d" \
@@ -60,9 +60,15 @@ fi
 
 run() {
     cmd=$1
-    for i in {0..5}; do
+    counter=0
+    limit=$2
+    while [ $counter -lt $limit ]; do
+        echo -n "$counter "
         eval "$cmd"
-    done 
+        counter=$((counter+1))
+    done
+
+    echo
 }
 
 get_cmd() {
@@ -71,15 +77,15 @@ get_cmd() {
     if [ "$RUNTIME" == "wasmer" ]; then
         if [ "$AOT" ]; then
             result_file="$bin_file.wasmer.$BACKEND.aot.result"
-            cmd="wasmer run $bin_file.wasmer.$BACKEND.aot >> $result_file"
+            cmd="wasmer --quiet run $bin_file.wasmer.$BACKEND.aot >> $result_file"
         else
             result_file="$bin_file.wasmer.$BACKEND.jit.result"
-            cmd="wasmer run --$BACKEND $bin_file >> $result_file"
+            cmd="wasmer --quiet run --$BACKEND $bin_file >> $result_file"
         fi
     elif [ "$RUNTIME" == "wasmtime" ]; then
         if [ "$AOT" ]; then
             result_file="$bin_file.wasmtime.$BACKEND.aot.result"
-            cmd="wasmtime run $bin_file.wasmtime.$BACKEND.aot >> $result_file"
+            cmd="wasmtime run --allow-precompiled  $bin_file.wasmtime.$BACKEND.aot >> $result_file"
         else
             result_file="$bin_file.wasmtime.$BACKEND.jit.result"
             cmd="wasmtime run $bin_file >> $result_file"
@@ -99,15 +105,33 @@ for bench in "${benchmarks[@]}"; do
 
     for variant in "${datasets[@]}"; do
 
+        case "$variant" in
+            "mini"|"small"|"medium")
+                iters="100"
+                ;;
+            "large")
+                iters="20"
+                ;;
+            "extralarge")
+                iters="5"
+                ;;
+            *)
+                echo "Wrong variant: $variant"
+                exit 1
+                ;;
+        esac
+
         if [ "$RUNTIME" ]; then
             # wasip1 and wasix runs with jit and aot approaches
             bin_file="${benchmark_name}_$variant.$target"
             get_cmd "$bin_file"
             rm -f "$bench_dir/$result_file"
 
+            echo "Testing $target $RUNTIME $BACKEND: $bin_file..."
+
             (
                 cd $bench_dir;
-                run "$cmd";
+                run "$cmd" "$iters";
             )
 
         else
@@ -115,14 +139,13 @@ for bench in "${benchmarks[@]}"; do
             result_file="${benchmark_name}_$variant.native.result"
             rm -f "$bench_dir/$result_file"
 
+            echo "Testing native: ${benchmark_name}_$variant..."
             (
                 cd $bench_dir;
-                run "./${benchmark_name}_$variant >> $result_file";
+                run "./${benchmark_name}_$variant >> $result_file" "$iters";
             )
 
         fi
     done
-
-    exit 0
 
 done
