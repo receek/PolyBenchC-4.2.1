@@ -145,7 +145,7 @@ $(WASI_TARGETFILES): $(WASI_EXECS)
 wasi: $(WASI_EXECS)
 
 $(WASI_WASMER_AOT_CRANELIFT_TARGETFILES): $(WASI_TARGETFILES)
-	wasmer compile --cranelift $(@:%.wasmer.cranelift.aot=%) -o $@
+	wasmer compile --target $(shell llvm-config --host-target) --cranelift $(@:%.wasmer.cranelift.aot=%) -o $@
 
 wasi-wasmer-cranelift: $(WASI_WASMER_AOT_CRANELIFT_TARGETFILES)
 
@@ -155,12 +155,12 @@ wasi-wasmer-cranelift: $(WASI_WASMER_AOT_CRANELIFT_TARGETFILES)
 # wasi-wasmer-singlepass: $(WASI_WASMER_AOT_SINGLEPASS_TARGETFILES)
 
 $(WASI_WASMER_AOT_LLVM_TARGETFILES): $(WASI_TARGETFILES)
-	wasmer compile --llvm $(@:%.wasmer.llvm.aot=%) -o $@
+	wasmer compile --target $(shell llvm-config --host-target) --llvm $(@:%.wasmer.llvm.aot=%) -o $@
 
 wasi-wasmer-llvm: $(WASI_WASMER_AOT_LLVM_TARGETFILES)
 
 $(WASI_WASMTIME_AOT_CRANELIFT_TARGETFILES): $(WASI_TARGETFILES)
-	wasmtime compile $(@:%.wasmtime.cranelift.aot=%) -o $@
+	wasmtime compile --target $(shell llvm-config --host-target) $(@:%.wasmtime.cranelift.aot=%) -o $@
 
 wasi-wasmtime-cranelift: $(WASI_WASMTIME_AOT_CRANELIFT_TARGETFILES)
 
@@ -195,7 +195,7 @@ $(WASIX_TARGETFILES): $(WASIX_EXECS)
 wasix: $(WASIX_TARGETFILES)
 
 $(WASIX_WASMER_AOT_CRANELIFT_TARGETFILES): $(WASIX_TARGETFILES)
-	wasmer compile --cranelift $(@:%.wasmer.cranelift.aot=%) -o $@
+	wasmer compile --target $(shell llvm-config --host-target) --cranelift $(@:%.wasmer.cranelift.aot=%) -o $@
 
 wasix-wasmer-cranelift: $(WASIX_WASMER_AOT_CRANELIFT_TARGETFILES)
 
@@ -205,7 +205,7 @@ wasix-wasmer-cranelift: $(WASIX_WASMER_AOT_CRANELIFT_TARGETFILES)
 # wasix-wasmer-singlepass: $(WASIX_WASMER_AOT_SINGLEPASS_TARGETFILES)
 
 $(WASIX_WASMER_AOT_LLVM_TARGETFILES): $(WASIX_TARGETFILES)
-	wasmer compile --llvm $(@:%.wasmer.llvm.aot=%) -o $@
+	wasmer compile --target $(shell llvm-config --host-target) --llvm $(@:%.wasmer.llvm.aot=%) -o $@
 
 wasix-wasmer-llvm: $(WASIX_WASMER_AOT_LLVM_TARGETFILES)
 
