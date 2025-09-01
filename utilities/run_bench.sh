@@ -77,10 +77,10 @@ get_cmd() {
     if [ "$RUNTIME" == "wasmer" ]; then
         if [ "$AOT" ]; then
             result_file="$bin_file.wasmer.$BACKEND.aot.result"
-            cmd="wasmer --quiet run $bin_file.wasmer.$BACKEND.aot >> $result_file"
+            cmd="wasmer --quiet run --disable-cache $bin_file.wasmer.$BACKEND.aot >> $result_file"
         else
             result_file="$bin_file.wasmer.$BACKEND.jit.result"
-            cmd="wasmer --quiet run --$BACKEND $bin_file >> $result_file"
+            cmd="wasmer --quiet run --disable-cache --$BACKEND $bin_file >> $result_file"
         fi
     elif [ "$RUNTIME" == "wasmtime" ]; then
         if [ "$AOT" ]; then
